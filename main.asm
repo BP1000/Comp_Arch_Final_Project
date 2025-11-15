@@ -71,7 +71,25 @@ INCLUDE Irvine32.inc
  main ENDP
 
  ResetGame PROC
-
  ;spawn fruits n stuff
 
  ResetGame ENDP
+
+ HandleInput PROC
+ ;read / deal w input
+
+ HandleInput ENDP
+
+ UpdateFruits PROC
+ ;handle fruit when its missed and make more
+
+ UpdateFruits ENDP
+
+ RenderFrame PROC
+
+ RenderFrame ENDP
+
+ PlayAgain PROC
+ ;check if user wants to play again
+
+ PlayAgain ENDP
