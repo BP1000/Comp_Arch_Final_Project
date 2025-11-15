@@ -36,4 +36,24 @@ INCLUDE Irvine32.inc
 	playerChar BYTE "|" ;Ninja sword
 	sliceChar BYTE "-" ;slice effect used 
 
- 
+ .code
+ main PROC
+ 	call Randomize
+
+ StartGame:
+ 	call ResetGame
+
+ GameLoop:
+ 	call Clrscr
+ 	call UpdateFruits
+ 	call RenderFrame
+
+ 	mov al, gameOver
+ 	cmp al, 0
+ 	jne EndGame
+
+ 	jmp GameLoop
+
+ EndGame:
+
+ main ENDP
