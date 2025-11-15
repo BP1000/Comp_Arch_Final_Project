@@ -52,8 +52,26 @@ INCLUDE Irvine32.inc
  	cmp al, 0
  	jne EndGame
 
+ 	;avoid flashing screen 
+ 	mov eax, 30
+ 	call Delay
+
  	jmp GameLoop
 
  EndGame:
+ 	call PlayAgain
+ 	call ReadKey ;see if player wants to play again or not
+ 	cmp al, 'Y'
+ 	je StartGame
+ 	cmp al, 'y'
+ 	je StartGame
+
+ 	exit
 
  main ENDP
+
+ ResetGame PROC
+
+ ;spawn fruits n stuff
+
+ ResetGame ENDP
