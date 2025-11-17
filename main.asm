@@ -18,10 +18,10 @@ INCLUDE Irvine32.inc
 		x BYTE ?
 		y BYTE ?
 		active BYTE	?
-		type BYTE ?
+		var_type BYTE ?
 		speed BYTE ?
 	fruit ENDS
-	fruits fruit MAX_FRUITS DUP(<>)
+	fruits fruit MAX_FRUITS DUP(<0, 0, 0,1>)
 
 	welcomeMsg BYTE "Welcome to Fruit Ninja!", 0
 	instructions BYTE "Use A/D to move. Space to slice", 0
@@ -36,9 +36,23 @@ INCLUDE Irvine32.inc
 	playerChar BYTE "|" ;Ninja sword
 	sliceChar BYTE "-" ;slice effect used 
 
+	SpawnFruit PROTO
+	ResetGame PROTO
+	HandleInputs PROTO
+	UpdateFruits PROTO
+	RenderFrame PROTO
+	PlayAgain PROTO
  .code
  main PROC
  	call Randomize
+	call Clrscr
+	mov edx, OFFSET welcomeMSG
+	call WriteString
+	call Crlf
+	mov edx, OFFSET instructions
+	call WriteString
+	call Crlf
+	call ReadKey
 
  StartGame:
  	call ResetGame
@@ -93,3 +107,4 @@ INCLUDE Irvine32.inc
  ;check if user wants to play again
 
  PlayAgain ENDP
+ END main
