@@ -38,7 +38,7 @@ INCLUDE Irvine32.inc
 
 	SpawnFruit PROTO
 	ResetGame PROTO
-	HandleInputs PROTO
+	;HandleInputs PROTO
 	UpdateFruits PROTO
 	RenderFrame PROTO
 	PlayAgain PROTO
@@ -59,9 +59,11 @@ INCLUDE Irvine32.inc
 
  GameLoop:
  	call Clrscr
- 	call UpdateFruits
- 	call RenderFrame
+	;call HandleInput
+ 	;call UpdateFruits
+ 	;call RenderFrame
 
+	;check if game over
  	mov al, gameOver
  	cmp al, 0
  	jne EndGame
@@ -86,8 +88,44 @@ INCLUDE Irvine32.inc
 
  ResetGame PROC
  ;spawn fruits n stuff
+ mov score, 0
+ mov lives, 0
+ mov gameOver, 0
+ mov ecx, MAX_FRUITS
+ mov edi, OFFSET fruits
+ 
+ ClearLoop:
+	mov BYTE PTR [edi].fruit.active, 0
+	add edi, SIZEOF fruit
+	loop ClearLoop
+	;spawn 2 fruits
+	call SpawnFruit
+	call SpawnFruit
+	ret
+ResetGame ENDP
 
- ResetGame ENDP
+SpawnFruit PROC
+	mov edi, OFFSET fruits
+	mov ecx, MAX_FRUITS
+FindSlot:
+	cmp BYTE PTR [edi].fruit.active, 0
+	je Found
+	add edi, SIZEOF fruit
+	loop FindSlot
+	ret
+Found:
+	mov BYTE PTR [edi].fruit.active, 1
+	;random X value
+	mov eax, SCREEN_WIDTH - 2
+	call RandomRange
+	mov [edi].fruit.x, al
+	mov BYTE PTR [edi].fruit.y, 1
+	mov eax, 5
+	call RandomRange
+	mov [edi].fruit.var_type, al
+	mov BYTE PTR [edi].fruit.speed, 1
+	ret
+SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
