@@ -150,11 +150,26 @@ SpawnFruit ENDP
  MoveRight:
  	cmp playerX, SCREEN_WIDTH-1
  	jge NoInput
- 	inc playerx
+ 	inc playerX
  	jmp NoInput
  NoInput:
  	ret
  Slice:
+ 	mov ecx, MAX_FRUITS
+ 	mov edi, OFFSET fruits
+ FruitLoop:
+ 	cmp BYTE PTR [edi].fruit.active, 1
+ 	jne MissedSlice
+
+ 	;check fruit near bottom
+
+ 	;check columns 
+
+ 	;user hit fruit
+ MissedSlice;
+ 	add edi, SIZEOF fruit
+ 	loop FruitLoop
+ 	jmp NoInput
 
  HandleInput ENDP
 
