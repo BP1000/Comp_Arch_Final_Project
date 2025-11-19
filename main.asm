@@ -38,7 +38,7 @@ INCLUDE Irvine32.inc
 
 	SpawnFruit PROTO
 	ResetGame PROTO
-	;HandleInputs PROTO
+	HandleInput PROTO
 	UpdateFruits PROTO
 	RenderFrame PROTO
 	PlayAgain PROTO
@@ -59,7 +59,7 @@ INCLUDE Irvine32.inc
 
  GameLoop:
  	call Clrscr
-	;call HandleInput
+	call HandleInput
  	;call UpdateFruits
  	;call RenderFrame
 
@@ -161,11 +161,21 @@ SpawnFruit ENDP
  	cmp BYTE PTR [edi].fruit.active, 1
  	jne MissedSlice
 
- 	;check fruit near bottom
+ 	;check columns
+ 	mov al, [edi].fruit.x
+ 	cmp al, playerX
+ 	jne MissedSlice
 
- 	;check columns 
+ 	;check fruit near bottom
+ 	mov al, [edi].fruit.y
+ 	cmp al, SCREEN_HEIGHT-2
+ 	jl MissedSlice
 
  	;user hit fruit
+ 	mov BYTE PTR [edi].fruit.active, 0
+ 	inc score
+ 	call SpawnFruit
+
  MissedSlice;
  	add edi, SIZEOF fruit
  	loop FruitLoop
