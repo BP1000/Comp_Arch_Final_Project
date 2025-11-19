@@ -129,6 +129,10 @@ SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
+ 	call KeyPressed
+ 	cmp eax, 0
+ 	je NoInput
+
  	call ReadKey
  	cmp al, 'A'
  	je MoveLeft
@@ -136,14 +140,22 @@ SpawnFruit ENDP
  	je MoveRight
  	cmp al, ' '
  	je Slice
- 	ret
+ 	jmp NoInput
 
  MoveLeft:
-
+ 	cmp playerX, 0
+ 	jle NoInput
+ 	dec playerX
+ 	jmp NoInput
  MoveRight:
-
+ 	cmp playerX, SCREEN_WIDTH-1
+ 	jge NoInput
+ 	inc playerx
+ 	jmp NoInput
+ NoInput:
+ 	ret
  Slice:
- 
+
  HandleInput ENDP
 
  UpdateFruits PROC
