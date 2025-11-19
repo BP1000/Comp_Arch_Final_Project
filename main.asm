@@ -21,7 +21,7 @@ INCLUDE Irvine32.inc
 		var_type BYTE ?
 		speed BYTE ?
 	fruit ENDS
-	fruits fruit MAX_FRUITS DUP(<0, 0, 0,1>)
+	fruits fruit MAX_FRUITS DUP(<0, 0, 0, 0,1>)
 
 	welcomeMsg BYTE "Welcome to Fruit Ninja!", 0
 	instructions BYTE "Use A/D to move. Space to slice", 0
@@ -46,7 +46,7 @@ INCLUDE Irvine32.inc
  main PROC
  	call Randomize
 	call Clrscr
-	mov edx, OFFSET welcomeMSG
+	mov edx, OFFSET welcomeMsg
 	call WriteString
 	call Crlf
 	mov edx, OFFSET instructions
@@ -89,7 +89,7 @@ INCLUDE Irvine32.inc
  ResetGame PROC
  ;spawn fruits n stuff
  mov score, 0
- mov lives, 0
+ mov lives, 3
  mov gameOver, 0
  mov ecx, MAX_FRUITS
  mov edi, OFFSET fruits
@@ -129,7 +129,21 @@ SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
+ 	call ReadKey
+ 	cmp al, 'A'
+ 	je MoveLeft
+ 	cmp al, 'D'
+ 	je MoveRight
+ 	cmp al, ' '
+ 	je Slice
+ 	ret
 
+ MoveLeft:
+
+ MoveRight:
+
+ Slice:
+ 
  HandleInput ENDP
 
  UpdateFruits PROC
