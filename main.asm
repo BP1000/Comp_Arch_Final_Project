@@ -129,7 +129,7 @@ SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
- 	call KeyPressed
+ 	;call KeyPressed
  	cmp eax, 0
  	je NoInput
 
@@ -176,16 +176,39 @@ SpawnFruit ENDP
  	inc score
  	call SpawnFruit
 
- MissedSlice;
+MissedSlice:
  	add edi, SIZEOF fruit
  	loop FruitLoop
  	jmp NoInput
 
- HandleInput ENDP
+HandleInput ENDP
 
- UpdateFruits PROC
+UpdateFruits PROC
  ;handle fruit when its missed and make more
+	mov ecx, MAX_FRUITS
+	mov edi, OFFSET fruits
 
+FruitLoop:
+	cmp BYTE PTR [edi].fruit.active, 1
+	jne NextFruit
+	mov al, [edi].fruit.y
+	inc al
+	mov [edi].fruit.y, al
+	cmp al, SCREEN_HEIGHT - 1
+	jl NextFruit
+	mov BYTE PTR [edi].fruit.active, 0
+	dec lives
+	cmp lives, 0
+	jne Respawn
+	mov gameOver, 1
+	jmp EndF
+Respawn:
+	call SpawnFruit
+NextFruit:
+	add edi, SIZEOF fruit
+	loop FruitLoop
+EndF:
+	ret
  UpdateFruits ENDP
 
  RenderFrame PROC
