@@ -211,9 +211,42 @@ EndF:
 	ret
  UpdateFruits ENDP
 
- RenderFrame PROC
+RenderFrame PROC
+	call Clrscr
+	mov edx, OFFSET scoreMsg
+	call WriteString
+	mov eax, score
+	call WriteDec
+	call Crlf
 
- RenderFrame ENDP
+	mov edx, OFFSET livesMsg
+	call WriteString
+	mov eax, lives
+	call WriteDec
+	call Crlf
+	mov ecx, MAX_FRUITS
+	mov edi, OFFSET fruits
+DrawFruitLoop:
+	cmp BYTE PTR [edi].fruit.active, 1
+	jne Skip
+	mov al, [edi].fruit.x
+	mov dl, al
+	mov al, [edi].fruit.y
+	mov dh, al
+	call Gotoxy
+	movzx eax, [edi].fruit.var_type
+	movzx edx, fruitChars[eax]
+	call WriteChar
+Skip:
+	add edi, SIZEOF fruit
+	loop DrawFruitLoop
+	mov dl, playerX
+	mov dh, SCREEN_HEIGHT - 1
+	call Gotoxy
+	movzx edx, playerChar
+	call WriteChar
+	ret
+RenderFrame ENDP
 
  PlayAgain PROC
  ;check if user wants to play again
