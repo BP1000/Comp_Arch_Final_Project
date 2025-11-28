@@ -43,48 +43,7 @@ INCLUDE Irvine32.inc
 	RenderFrame PROTO
 	PlayAgain PROTO
  .code
- main PROC
- 	call Randomize
-	call Clrscr
-	mov edx, OFFSET welcomeMsg
-	call WriteString
-	call Crlf
-	mov edx, OFFSET instructions
-	call WriteString
-	call Crlf
-	call ReadKey
-
- StartGame:
- 	call ResetGame
-
- GameLoop:
- 	call Clrscr
-	call HandleInput
- 	;call UpdateFruits
- 	;call RenderFrame
-
-	;check if game over
- 	mov al, gameOver
- 	cmp al, 0
- 	jne EndGame
-
- 	;avoid flashing screen 
- 	mov eax, 30
- 	call Delay
-
- 	jmp GameLoop
-
- EndGame:
- 	call PlayAgain
- 	call ReadKey ;see if player wants to play again or not
- 	cmp al, 'Y'
- 	je StartGame
- 	cmp al, 'y'
- 	je StartGame
-
- 	exit
-
- main ENDP
+ 
 
  ResetGame PROC
  ;spawn fruits n stuff
@@ -118,6 +77,7 @@ Found:
 	;random X value
 	mov eax, SCREEN_WIDTH - 2
 	call RandomRange
+	inc eax
 	mov [edi].fruit.x, al
 	mov BYTE PTR [edi].fruit.y, 1
 	mov eax, 5
@@ -129,25 +89,22 @@ SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
- 	;call KeyPressed
- 	cmp eax, 0
- 	je NoInput
-
- 	call ReadKey
- 	cmp al, 'A'
- 	je MoveLeft
- 	cmp al, 'D'
- 	je MoveRight
- 	cmp al, ' '
- 	je Slice
- 	jmp NoInput
-
+ call ReadKey
+ jz NoInput ;No key pressed
+ cmp ax, 1E61h ;'A' key scan code
+ je MoveLeft
+ cmp ax, 2064h ;'D' key scan code
+ je MoveRight
+ cmp al, ' '
+ je slice
+ jmp NoInput
  MoveLeft:
- 	cmp playerX, 0
+ 	cmp playerX, 1
  	jle NoInput
  	dec playerX
  	jmp NoInput
  MoveRight:
+    mov al, playerX
  	cmp playerX, SCREEN_WIDTH-1
  	jge NoInput
  	inc playerX
@@ -250,6 +207,50 @@ RenderFrame ENDP
 
  PlayAgain PROC
  ;check if user wants to play again
-
+ call Clrscr
+ mov eax, score
+ call WriteDec
+ call Crlf
+ mov edx, OFFSET playAgainMsg
+ call WriteString
+ call Crlf
+ ret
  PlayAgain ENDP
+
+main PROC
+ 	call Randomize
+	call Clrscr
+	mov edx, OFFSET welcomeMsg
+	call WriteString
+	call Crlf
+	mov edx, OFFSET instructions
+	call WriteString
+	call Crlf
+	call ReadKey
+
+ StartGame:
+ 	call ResetGame
+
+ GameLoop:
+ 	call Clrscr
+	call HandleInput
+ 	call UpdateFruits
+ 	call RenderFrame
+
+	;check if game over
+ 	mov al, gameOver
+ 	cmp al, 0
+ 	jne EndGame
+
+ 	;avoid flashing screen 
+ 	mov eax, 30
+ 	call Delay
+
+ 	jmp GameLoop
+
+ EndGame:
+ 	call PlayAgain
+ 	exit
+
+ main ENDP
  END main
