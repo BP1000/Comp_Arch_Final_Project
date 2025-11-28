@@ -132,12 +132,13 @@ SpawnFruit ENDP
  	mov BYTE PTR [edi].fruit.active, 0
  	inc score
  	call SpawnFruit
-
+	jmp SliceComplete
 MissedSlice:
  	add edi, SIZEOF fruit
  	loop FruitLoop
- 	jmp NoInput
 
+SliceComplete:
+	ret
 HandleInput ENDP
 
 UpdateFruits PROC
@@ -149,14 +150,15 @@ FruitLoop:
 	cmp BYTE PTR [edi].fruit.active, 1
 	jne NextFruit
 	mov al, [edi].fruit.y
-	inc al
+	add al, [edi].fruit.speed
 	mov [edi].fruit.y, al
 	cmp al, SCREEN_HEIGHT - 1
 	jl NextFruit
+	; Fruit reached bottom
 	mov BYTE PTR [edi].fruit.active, 0
 	dec lives
-	cmp lives, 0
-	jne Respawn
+	jnz Respawn
+	;No lives left
 	mov gameOver, 1
 	jmp EndF
 Respawn:
@@ -169,30 +171,33 @@ EndF:
  UpdateFruits ENDP
 
 RenderFrame PROC
-	call Clrscr
+	;Save curosr position
+	mov dh, 0
+	mov dl, 0
+	call Gotoxy
+
+	;display score and lives
 	mov edx, OFFSET scoreMsg
 	call WriteString
 	mov eax, score
 	call WriteDec
-	call Crlf
 
 	mov edx, OFFSET livesMsg
 	call WriteString
 	mov eax, lives
 	call WriteDec
-	call Crlf
+
+	;Draw fruits
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
 DrawFruitLoop:
 	cmp BYTE PTR [edi].fruit.active, 1
 	jne Skip
-	mov al, [edi].fruit.x
-	mov dl, al
-	mov al, [edi].fruit.y
-	mov dh, al
+	mov dl, [edi].fruit.x
+	mov dh, [edi].fruit.y
 	call Gotoxy
 	movzx eax, [edi].fruit.var_type
-	movzx edx, fruitChars[eax]
+	mov al, fruitChars[eax]
 	call WriteChar
 Skip:
 	add edi, SIZEOF fruit
