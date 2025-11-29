@@ -80,7 +80,7 @@ Found:
 	inc eax
 	mov [edi].fruit.x, al
 	mov BYTE PTR [edi].fruit.y, 1
-	mov eax, 5
+	mov eax, LENGTHOF fruitChars
 	call RandomRange
 	mov [edi].fruit.var_type, al
 	mov BYTE PTR [edi].fruit.speed, 1
@@ -99,18 +99,20 @@ SpawnFruit ENDP
  je slice
  jmp NoInput
  MoveLeft:
- 	cmp playerX, 1
- 	jle NoInput
  	dec playerX
+ 	cmp playerX, 1
+ 	jge CLampDone
+ 	mov playerX, 1
+ ClampDone:
  	jmp NoInput
  MoveRight:
-    mov al, playerX
+   inc playerX
  	cmp playerX, SCREEN_WIDTH-1
- 	jge NoInput
- 	inc playerX
+ 	jle ClampDone2
+ 	mov playerX, SCREEN_WIDTH-1
+ ClampDone2:
  	jmp NoInput
- NoInput:
- 	ret
+
  Slice:
  	mov ecx, MAX_FRUITS
  	mov edi, OFFSET fruits
@@ -205,7 +207,7 @@ Skip:
 	mov dl, playerX
 	mov dh, SCREEN_HEIGHT - 1
 	call Gotoxy
-	movzx edx, playerChar
+	movzx al, playerChar
 	call WriteChar
 	ret
 RenderFrame ENDP
