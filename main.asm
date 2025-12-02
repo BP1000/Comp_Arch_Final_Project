@@ -235,6 +235,12 @@ RenderFrame ENDP
  PlayAgain PROC
  ;check if user wants to play again
  call Clrscr
+ mov ecx, MAX_FRUITS
+ mov edi, OFFSET fruits ;clear fruits for new game
+ClearLoop:
+ mov BYTE PTR [edi].fruit.active, 0
+ add edi, SIZEOF fruit
+ loop ClearLoop
  mov edx, OFFSET gameOverMsg
  call WriteString
  mov eax, score
@@ -249,7 +255,8 @@ RenderFrame ENDP
  je RestartGame
  exit
 RestartGame;
-	jmp StartGame
+ call ResetGame
+ jmp GameLoop
  PlayAgain ENDP
 
 main PROC
