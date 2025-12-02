@@ -42,10 +42,10 @@ INCLUDE Irvine32.inc
 	UpdateFruits PROTO
 	RenderFrame PROTO
 	PlayAgain PROTO
- .code
+.code
  
 
- ResetGame PROC
+ResetGame PROC
  ;spawn fruits n stuff
  mov score, 0
  mov lives, 3
@@ -53,7 +53,7 @@ INCLUDE Irvine32.inc
  mov ecx, MAX_FRUITS
  mov edi, OFFSET fruits
  
- ClearLoop:
+ClearLoop:
 	mov BYTE PTR [edi].fruit.active, 0
 	add edi, SIZEOF fruit
 	loop ClearLoop
@@ -79,7 +79,7 @@ Found:
 	call RandomRange
 	inc eax
 	mov [edi].fruit.x, al
-	mov BYTE PTR [edi].fruit.y, 1
+	mov BYTE PTR [edi].fruit.y, 0
 	mov eax, LENGTHOF fruitChars
 	call RandomRange
 	mov [edi].fruit.var_type, al
@@ -91,57 +91,66 @@ SpawnFruit ENDP
  ;read / deal w input
  call ReadKey
  jz NoInput ;No key pressed
- cmp ax, 1E61h ;'A' key scan code
+ cmp ax, 1E00h;'A' key scan code
  je MoveLeft
- cmp ax, 2064h ;'D' key scan code
+ cmp ax, 2000h ; 'D' key scan code
  je MoveRight
  cmp al, ' '
- je slice
+ je SliceKey
  jmp NoInput
  MoveLeft:
  	dec playerX
  	cmp playerX, 1
- 	jge CLampDone
+ 	jge ClampDoneLeft 
  	mov playerX, 1
- ClampDone:
+ ClampDoneLeft:
  	jmp NoInput
  MoveRight:
    inc playerX
  	cmp playerX, SCREEN_WIDTH-1
- 	jle ClampDone2
+ 	jle ClampDoneRight
  	mov playerX, SCREEN_WIDTH-1
- ClampDone2:
+ ClampDoneRight:
  	jmp NoInput
 
- Slice:
+ SliceKey:
  	mov ecx, MAX_FRUITS
  	mov edi, OFFSET fruits
  FruitLoop:
  	cmp BYTE PTR [edi].fruit.active, 1
- 	jne MissedSlice
-
- 	;check columns
- 	mov al, [edi].fruit.x
- 	cmp al, playerX
- 	jne MissedSlice
-
- 	;check fruit near bottom
- 	mov al, [edi].fruit.y
- 	cmp al, SCREEN_HEIGHT-2
- 	jl MissedSlice
-
- 	;user hit fruit
- 	mov BYTE PTR [edi].fruit.active, 0
- 	inc score
- 	call SpawnFruit
-	jmp SliceComplete
-MissedSlice:
- 	add edi, SIZEOF fruit
- 	loop FruitLoop
-
-SliceComplete:
+ 	jne NextFruit
+	mov al, [edi].fruit.x
+	sub al, playerX
+	cmp al, 0
+	je CheckY
+	cmp al, 1
+	je CheckY
+	cmp al, -1
+	je CheckY
+	jmp NextFruit
+ 	
+CheckY:
+	mov al, [edi].fruit.y
+	cmp al, SCREEN_HEIGHT-3
+	jge HitFruit
+	jmp NextFruit
+HitFruit:
+	mov BYTE PTR [edi].fruit.active, 0
+	inc score
+	call SpawnFruit
+	ret
+NextFruit:
+	add edi, SIZEOF fruit
+	loop FruitLoop
+NoInput:
 	ret
 HandleInput ENDP
+
+
+
+
+
+
 
 UpdateFruits PROC
  ;handle fruit when its missed and make more
@@ -159,20 +168,24 @@ FruitLoop:
 	; Fruit reached bottom
 	mov BYTE PTR [edi].fruit.active, 0
 	dec lives
-	jnz Respawn
-	;No lives left
-	mov gameOver, 1
-	jmp EndF
+	cmp lives, 0 ;check if game should end
+	jg Respawn
+	mov gameOver, 1 ;no live sleft
+	jmp EndUpdate
+
 Respawn:
 	call SpawnFruit
 NextFruit:
 	add edi, SIZEOF fruit
 	loop FruitLoop
-EndF:
+EndUpdate:
 	ret
  UpdateFruits ENDP
 
+
+
 RenderFrame PROC
+	call Clrscr
 	;Save curosr position
 	mov dh, 0
 	mov dl, 0
@@ -207,7 +220,7 @@ Skip:
 	mov dl, playerX
 	mov dh, SCREEN_HEIGHT - 1
 	call Gotoxy
-	movzx al, playerChar
+	movzx ax, playerChar
 	call WriteChar
 	ret
 RenderFrame ENDP
