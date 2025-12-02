@@ -252,11 +252,12 @@ ClearLoop:
  call Crlf
  call ReadKey
  cmp al, 'Y'
- je RestartGame
- exit
-RestartGame;
- call ResetGame
- jmp GameLoop
+ je ChooseRestart
+ mov al, 0
+ ret
+ChooseRestart:
+ mov al, 1
+ ret
  PlayAgain ENDP
 
 main PROC
@@ -292,7 +293,12 @@ main PROC
 
  EndGame:
  	call PlayAgain
+ 	cmp al, 1
+ 	je DoRestart
  	exit
+ DoRestart:
+  call ResetGame
+  jmp Gameloop
 
  main ENDP
  END main
