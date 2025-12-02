@@ -89,12 +89,19 @@ SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
- call ReadKey
+ call KeyReady
  jz NoInput ;No key pressed
+ call ReadKey
  cmp ax, 1E00h;'A' key scan code
  je MoveLeft
  cmp ax, 2000h ; 'D' key scan code
  je MoveRight
+
+ cmp ax, 4B00h ;left arrow
+ je MoveLeft
+ cmp ax, 4D00h ;right arrow
+ je MoveRight
+
  cmp al, ' '
  je SliceKey
  jmp NoInput
