@@ -235,13 +235,21 @@ RenderFrame ENDP
  PlayAgain PROC
  ;check if user wants to play again
  call Clrscr
+ mov edx, OFFSET gameOverMsg
+ call WriteString
  mov eax, score
  call WriteDec
  call Crlf
- mov edx, OFFSET playAgainMsg
+
+ mov edx, OFFSET playAgainMsg ;play again
  call WriteString
  call Crlf
- ret
+ call ReadKey
+ cmp al, 'Y'
+ je RestartGame
+ exit
+RestartGame;
+	jmp StartGame
  PlayAgain ENDP
 
 main PROC
