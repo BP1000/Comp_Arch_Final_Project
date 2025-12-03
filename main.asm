@@ -8,7 +8,8 @@ INCLUDE Irvine32.inc
 	SCREEN_WIDTH = 80
 	SCREEN_HEIGHT = 24
 	MAX_FRUITS = 5
-	FRUIT_SPEED = 1
+	FRUIT_SPEED = 80 ;increase delay so that the game doesn't end instantly
+	FRUIT_SPAWN_CHANCE = 10 ;decreaes the chance for fruits to spawn
 
 	score DWORD 0
 	lives DWORD 3
@@ -74,20 +75,22 @@ FindSlot:
 	ret
 Found:
 	mov BYTE PTR [edi].fruit.active, 1
-	;random X value
 	mov eax, SCREEN_WIDTH - 2
 	call RandomRange
 	inc eax
 	mov [edi].fruit.x, al
 	mov BYTE PTR [edi].fruit.y, 0
-	mov eax, 5 ;length of fruit chars
+	mov eax, 5
 	call RandomRange
 	mov [edi].fruit.var_type, al
-	mov BYTE PTR [edi].fruit.speed, 1
+	mov eax, 2
+	call RandomRange
+	inc eax
+	mov [edi].fruit.speed, al
 	ret
 SpawnFruit ENDP
 
- HandleInput PROC
+HandleInput PROC
  ;read / deal w input
  call ReadKey
  jz NoInput ;No key pressed
@@ -125,24 +128,46 @@ SpawnFruit ENDP
  FruitLoop:
  	cmp BYTE PTR [edi].fruit.active, 1
  	jne NextFruit
+	mov al, [edi].fruit.y
+	cmp al, SCREEN_HEIGHT - 2
+	jne NotAtSliceHeight
 	mov al, [edi].fruit.x
 	sub al, playerX
 	cmp al, 0
-	je CheckY
+	je HitFruit
 	cmp al, 1
-	je CheckY
+	je HitFruit
 	cmp al, -1
-	je CheckY
-	jmp NextFruit
- 	
-CheckY:
+	je HitFruit
+NotAtSliceHeight:
 	mov al, [edi].fruit.y
-	cmp al, SCREEN_HEIGHT-3
-	jge HitFruit
+	cmp al, SCREEN_HEIGHT - 1
+	jne NextFruit
+	mov al, [edi].fruit.x
+	sub al, playerX
+	cmp al, 0
+	je HitFruit
+	cmp al, 0
+	je HitFruit
+	cmp al, 1
+	je HitFruit
+	cmp al, -1
+	je HitFruit
 	jmp NextFruit
 HitFruit:
+	mov dl, [edi].fruit.x
+	mov dh, [edi].fruit.y
+	call Gotoxy
+	mov al, sliceChar
+	call WriteChar
+
 	mov BYTE PTR [edi].fruit.active, 0
 	inc score
+
+	push eax
+	mov eax, 50
+	call Delay
+	pop eax
 	call SpawnFruit
 	ret
 NextFruit:
@@ -167,12 +192,25 @@ FruitLoop:
 	cmp al, SCREEN_HEIGHT - 1
 	jl NextFruit
 	; Fruit reached bottom
+	mov al, [edi].fruit.x
+	sub al, playerX
+	cmp al, 0
+	je PlayerAtFruit
+	cmp al, 1
+	je PlayerAtFruit
+	cmp al, -1
+	je PlayerAtFruit
+
 	mov BYTE PTR [edi].fruit.active, 0
 	dec lives
-	cmp lives, 0 ;check if game should end
+	cmp lives ,0
 	jg Respawn
-	mov gameOver, 1 ;no live sleft
-	jmp EndUpdate
+	mov gameOver, 1
+	jmp NextFruit
+
+PlayerAtFruit:
+	mov BYTE PTR [edi].fruit.active, 0
+	jmp Respawn
 
 Respawn:
 	call SpawnFruit
@@ -258,27 +296,32 @@ main PROC
 	mov edx, OFFSET instructions
 	call WriteString
 	call Crlf
-	call ReadKey
+	call WaitMsg
 
  StartGame:
  	call ResetGame
 
  GameLoop:
- 	call Clrscr
 	call HandleInput
  	call UpdateFruits
- 	call RenderFrame
 
 	;check if game over
  	mov al, gameOver
- 	cmp al, 0
- 	jne EndGame
+ 	cmp al, 1
+ 	je EndGame
+	call RenderFrame
 
  	;avoid flashing screen 
- 	mov eax, 30
+ 	mov eax, 50
  	call Delay
 
- 	jmp GameLoop
+ 	mov eax, 5
+	call RandomRange
+	cmp eax, 0
+	jne NoSpawn
+	call SpawnFruit
+NoSpawn:
+	jmp GameLoop
 
  EndGame:
  	call PlayAgain
