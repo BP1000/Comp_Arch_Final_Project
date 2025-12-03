@@ -80,7 +80,7 @@ Found:
 	inc eax
 	mov [edi].fruit.x, al
 	mov BYTE PTR [edi].fruit.y, 0
-	mov eax, LENGTHOF fruitChars
+	mov eax, 5 ;length of fruit chars
 	call RandomRange
 	mov [edi].fruit.var_type, al
 	mov BYTE PTR [edi].fruit.speed, 1
@@ -89,9 +89,8 @@ SpawnFruit ENDP
 
  HandleInput PROC
  ;read / deal w input
- call KeyReady
- jz NoInput ;No key pressed
  call ReadKey
+ jz NoInput ;No key pressed
  cmp ax, 1E00h;'A' key scan code
  je MoveLeft
  cmp ax, 2000h ; 'D' key scan code
@@ -154,11 +153,6 @@ NoInput:
 HandleInput ENDP
 
 
-
-
-
-
-
 UpdateFruits PROC
  ;handle fruit when its missed and make more
 	mov ecx, MAX_FRUITS
@@ -204,12 +198,13 @@ RenderFrame PROC
 	mov eax, score
 	call WriteDec
 
+	mov dl, 20 
+	call Gotoxy
 	mov edx, OFFSET livesMsg
 	call WriteString
 	mov eax, lives
 	call WriteDec
 
-	;Draw fruits
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
 DrawFruitLoop:
@@ -227,37 +222,31 @@ Skip:
 	mov dl, playerX
 	mov dh, SCREEN_HEIGHT - 1
 	call Gotoxy
-	movzx ax, playerChar
+	mov al, playerChar
 	call WriteChar
 	ret
 RenderFrame ENDP
 
  PlayAgain PROC
- ;check if user wants to play again
  call Clrscr
- mov ecx, MAX_FRUITS
- mov edi, OFFSET fruits ;clear fruits for new game
-ClearLoop:
- mov BYTE PTR [edi].fruit.active, 0
- add edi, SIZEOF fruit
- loop ClearLoop
  mov edx, OFFSET gameOverMsg
  call WriteString
  mov eax, score
  call WriteDec
  call Crlf
-
- mov edx, OFFSET playAgainMsg ;play again
+ mov edx, OFFSET playAgainMsg
  call WriteString
  call Crlf
  call ReadKey
  cmp al, 'Y'
  je ChooseRestart
+ cmp al, 'y'
+ je ChooseRestart
  mov al, 0
  ret
 ChooseRestart:
- mov al, 1
- ret
+   mov al, 0
+   ret
  PlayAgain ENDP
 
 main PROC
