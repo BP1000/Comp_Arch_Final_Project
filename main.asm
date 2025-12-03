@@ -83,10 +83,7 @@ Found:
 	mov eax, 5
 	call RandomRange
 	mov [edi].fruit.var_type, al
-	mov eax, 2
-	call RandomRange
-	inc eax
-	mov [edi].fruit.speed, al
+	mov BYTE PTR [edi].fruit.speed, 1
 	ret
 SpawnFruit ENDP
 
@@ -108,14 +105,14 @@ HandleInput PROC
  je SliceKey
  jmp NoInput
  MoveLeft:
- 	sub playerX, 3
+ 	sub playerX, 5
  	cmp playerX, 1
  	jge ClampDoneLeft 
  	mov playerX, 1
  ClampDoneLeft:
  	jmp NoInput
  MoveRight:
-    add playerX, 3
+    add playerX, 5
  	cmp playerX, SCREEN_WIDTH-1
  	jle ClampDoneRight
  	mov playerX, SCREEN_WIDTH-1
