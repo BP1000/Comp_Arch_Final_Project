@@ -8,8 +8,8 @@ INCLUDE Irvine32.inc
 	SCREEN_WIDTH = 80
 	SCREEN_HEIGHT = 24
 	MAX_FRUITS = 5
-	FRUIT_SPEED = 80 ;increase delay so that the game doesn't end instantly
-	FRUIT_SPAWN_CHANCE = 10 ;decreaes the chance for fruits to spawn
+	FRUIT_SPEED = 200 ;increase delay so that the game doesn't end instantly
+	FRUIT_SPAWN_CHANCE = 80 ;decreaes the chance for fruits to spawn
 
 	score DWORD 0
 	lives DWORD 3
@@ -22,7 +22,7 @@ INCLUDE Irvine32.inc
 		var_type BYTE ?
 		speed BYTE ?
 	fruit ENDS
-	fruits fruit MAX_FRUITS DUP(<0, 0, 0, 0,1>)
+	fruits fruit MAX_FRUITS DUP(<0, 0, 0, 0,100>)
 
 	welcomeMsg BYTE "Welcome to Fruit Ninja!", 0
 	instructions BYTE "Use A/D to move. Space to slice", 0
@@ -108,14 +108,14 @@ HandleInput PROC
  je SliceKey
  jmp NoInput
  MoveLeft:
- 	dec playerX
+ 	sub playerX, 3
  	cmp playerX, 1
  	jge ClampDoneLeft 
  	mov playerX, 1
  ClampDoneLeft:
  	jmp NoInput
  MoveRight:
-   inc playerX
+    add playerX, 3
  	cmp playerX, SCREEN_WIDTH-1
  	jle ClampDoneRight
  	mov playerX, SCREEN_WIDTH-1
@@ -145,8 +145,6 @@ NotAtSliceHeight:
 	jne NextFruit
 	mov al, [edi].fruit.x
 	sub al, playerX
-	cmp al, 0
-	je HitFruit
 	cmp al, 0
 	je HitFruit
 	cmp al, 1
@@ -235,7 +233,7 @@ RenderFrame PROC
 	call WriteString
 	mov eax, score
 	call WriteDec
-
+	
 	mov dl, 20 
 	call Gotoxy
 	mov edx, OFFSET livesMsg
@@ -270,7 +268,7 @@ RenderFrame ENDP
  mov edx, OFFSET gameOverMsg
  call WriteString
  mov eax, score
- call WriteDec
+		call WriteDec
  call Crlf
  mov edx, OFFSET playAgainMsg
  call WriteString
@@ -283,7 +281,7 @@ RenderFrame ENDP
  mov al, 0
  ret
 ChooseRestart:
-   mov al, 0
+   mov al, 1
    ret
  PlayAgain ENDP
 
@@ -312,10 +310,10 @@ main PROC
 	call RenderFrame
 
  	;avoid flashing screen 
- 	mov eax, 50
+ 	mov eax, FRUIT_SPEED
  	call Delay
 
- 	mov eax, 5
+ 	mov eax, FRUIT_SPAWN_CHANCE
 	call RandomRange
 	cmp eax, 0
 	jne NoSpawn
