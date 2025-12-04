@@ -109,9 +109,9 @@ FoundSlot:
 	mov [edi].fruit.var_type, al
 	
 	; Set movement speed (2-5)
-	mov eax, 5
+	mov eax, 4
 	call RandomRange
-	inc eax ; 2-5
+	add eax, 2
 	mov [edi].fruit.speed, al
 	
 	mov [edi].fruit.counter, 0
@@ -162,13 +162,12 @@ FruitLoop:
 	
 	; Check if fruit is near player's Y position
 	mov al, [edi].fruit.y
-	cmp al, SCREEN_HEIGHT - 2 ; One above player
-	je CheckSlice
-	cmp al, SCREEN_HEIGHT - 1 ; At player position
-	je CheckSlice
-	cmp al, SCREEN_HEIGHT - 3 ; Two above player
-	je CheckSlice
-	jmp NextFruitSlice
+	mov bl, SCREEN_HEIGHT - 1
+	sub bl, al
+	cmp bl, 0
+	jl NextFruitSlice
+	cmp bl, 10
+	jle CheckSlice
 	
 CheckSlice:
 	; Check if fruit is within ±2 X positions of player
@@ -264,7 +263,7 @@ UpdateLoop:
 	je MoveSlower
 	cmp bl, 5
 	je MoveSlowest
-	; Speed = 3 (slowest)
+
 
 MoveSlowest:
 	test al, 7
@@ -272,7 +271,8 @@ MoveSlowest:
 	jmp DoMove
 	
 MoveSlower:
-	mov ah, al
+	mov al, [edi].fruit.counter
+	xor ah, ah
 	mov dl, 6
 	div dl
 	cmp ah, 0
