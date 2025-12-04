@@ -109,7 +109,7 @@ XOk:
 	mov [edi].fruit.x, al
 	
 	; Start at top of screen
-	mov [edi].fruit.y, 0
+	mov [edi].fruit.y, 1
 	
 	; Activate fruit
 	mov BYTE PTR [edi].fruit.active, 1
