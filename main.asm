@@ -136,6 +136,11 @@ HandleInput PROC
 	je HitFruit
 	cmp al, -1
 	je HitFruit
+	cmp al, 2
+	je HitFruit
+	cmp al, -2
+	je HitFruit
+
 NotAtSliceHeight:
 	mov al, [edi].fruit.y
 	cmp al, SCREEN_HEIGHT - 1
@@ -147,6 +152,10 @@ NotAtSliceHeight:
 	cmp al, 1
 	je HitFruit
 	cmp al, -1
+	je HitFruit
+	cmp al, 2
+	je HitFruit
+	cmp al, -2
 	je HitFruit
 	jmp NextFruit
 HitFruit:
