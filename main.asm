@@ -108,10 +108,10 @@ FoundSlot:
 	call RandomRange
 	mov [edi].fruit.var_type, al
 	
-	; Set movement speed (1-3)
-	mov eax, 3
+	; Set movement speed (2-5)
+	mov eax, 5
 	call RandomRange
-	inc eax ; 1-3
+	inc eax ; 2-5
 	mov [edi].fruit.speed, al
 	
 	mov [edi].fruit.counter, 0
@@ -258,8 +258,27 @@ UpdateLoop:
 	je MoveFast
 	cmp bl, 2
 	je MoveMedium
+	cmp bl, 3
+	je MoveSlow
+	cmp bl, 4
+	je MoveSlower
+	cmp bl, 5
+	je MoveSlowest
 	; Speed = 3 (slowest)
+
+MoveSlowest:
+	test al, 7
+	jnz NextUpdateFruit
+	jmp DoMove
 	
+MoveSlower:
+	mov ah, al
+	mov dl, 6
+	div dl
+	cmp ah, 0
+	jne NextUpdateFruit
+	jmp DoMove
+
 MoveSlow:
 	; Move every 4 frames (slowest)
 	test al, 3 ; Check if divisible by 4
