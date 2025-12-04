@@ -29,7 +29,7 @@ INCLUDE Irvine32.inc
 	fruits fruit MAX_FRUITS DUP(<0, 0, 0, 0, 1, 0>)
 
 	welcomeMsg BYTE "Welcome to Fruit Ninja!", 0
-	instructions BYTE "Use A/D to move. Space to slice", 0
+	instructions BYTE "Use arrow keys to move. Space to slice", 0
 	scoreMsg BYTE "Score: ", 0
 	livesMsg BYTE "Lives: ", 0
 	gameOverMsg BYTE "GAME OVER! Final Score: ", 0
