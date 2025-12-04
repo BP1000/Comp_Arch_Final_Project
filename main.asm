@@ -91,9 +91,21 @@ FoundSlot:
 	add eax, 5 ; Start from position 5
 	
 	; Make it a multiple of 5 for consistency
+	xor ah, ah
 	mov bl, 5
 	div bl
 	mul bl
+	
+	;clamp x
+	cmp al, 1
+	jl SetMinX
+	cmp al, SCREEN_WIDTH-2
+	jle XOk
+	mov al, SCREEN_WIDTH-2
+	jmp XOk
+SetMinX:
+	mov al, 1
+XOk:
 	mov [edi].fruit.x, al
 	
 	; Start at top of screen
@@ -253,8 +265,6 @@ UpdateLoop:
 	
 	; Check if it's time to move based on speed
 	mov bl, [edi].fruit.speed
-	cmp bl, 1
-	je MoveFast
 	cmp bl, 2
 	je MoveMedium
 	cmp bl, 3
@@ -291,9 +301,6 @@ MoveMedium:
 	jnz NextUpdateFruit
 	jmp DoMove
 	
-MoveFast:
-	; Move every frame
-	; (no check needed)
 	
 DoMove:
 	; Move fruit down by 1
