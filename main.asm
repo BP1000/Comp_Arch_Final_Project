@@ -127,7 +127,11 @@ HandleInput PROC
  	jne NextFruit
 	mov al, [edi].fruit.y
 	cmp al, SCREEN_HEIGHT - 2
-	jne NotAtSliceHeight
+	je CheckSlice
+	cmp al, SCREEN_HEIGHT - 1
+	jne NextFruit
+
+  CheckSlice:
 	mov al, [edi].fruit.x
 	sub al, playerX
 	cmp al, 0
@@ -136,11 +140,7 @@ HandleInput PROC
 	je HitFruit
 	cmp al, -1
 	je HitFruit
-	cmp al, 2
-	je HitFruit
-	cmp al, -2
-	je HitFruit
-
+	jmp NextFruit
 NotAtSliceHeight:
 	mov al, [edi].fruit.y
 	cmp al, SCREEN_HEIGHT - 1
@@ -176,7 +176,7 @@ HitFruit:
 	ret
 NextFruit:
 	add edi, SIZEOF fruit
-	loop FruitLoop
+	jnz FruitLoop
 NoInput:
 	ret
 HandleInput ENDP
@@ -187,7 +187,7 @@ UpdateFruits PROC
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
 
-FruitLoop:
+UpdateLoop:
 	cmp BYTE PTR [edi].fruit.active, 1
 	jne NextFruit
 	mov al, [edi].fruit.y
@@ -214,14 +214,12 @@ FruitLoop:
 
 PlayerAtFruit:
 	mov BYTE PTR [edi].fruit.active, 0
-	jmp Respawn
-
 Respawn:
 	call SpawnFruit
 NextFruit:
 	add edi, SIZEOF fruit
-	loop FruitLoop
-EndUpdate:
+	dec ecx
+	jnz UpdateLoop
 	ret
  UpdateFruits ENDP
 
