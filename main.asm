@@ -8,12 +8,15 @@ INCLUDE Irvine32.inc
 	SCREEN_WIDTH = 80
 	SCREEN_HEIGHT = 24
 	MAX_FRUITS = 5
-	FRUIT_SPEED = 150 ; Frame delay (ms) - reduced slightly for smoother movement
-	FRUIT_SPAWN_CHANCE = 80
+	FRUIT_SPEED = 100 ; Frame delay for smoother movement
+	SPAWN_INTERVAL = 2000 ; 2 second interval between spawns (in ms)
+	MAX_ON_SCREEN = 3 ; Maximum fruits allowed on screen at once
 
 	score DWORD 0
 	lives DWORD 3
 	gameOver BYTE 0
+	spawnTimer DWORD 2000 ; Start with 2 seconds for first spawn
+	activeFruitCount BYTE 0 ; Track how many fruits are active
 
 	fruit STRUCT 
 		x BYTE ?
@@ -21,7 +24,7 @@ INCLUDE Irvine32.inc
 		active BYTE	?
 		var_type BYTE ?
 		speed BYTE ?
-		counter BYTE ? ; Counter to control movement speed
+		counter BYTE ?
 	fruit ENDS
 	fruits fruit MAX_FRUITS DUP(<0, 0, 0, 0, 1, 0>)
 
@@ -33,166 +36,101 @@ INCLUDE Irvine32.inc
 	playAgainMsg BYTE "Press Y to play again, or any other key to exit", 0
 
 	playerX BYTE SCREEN_WIDTH /2
-	fruitChars BYTE "0@#$&"
+	fruitChars BYTE "@#$&0"
 	playerChar BYTE "|"
 	sliceChar BYTE "-"
 
 	SpawnFruit PROTO
-	CheckCollision PROTO xPos:BYTE, yPos:BYTE
 	ResetGame PROTO
 	HandleInput PROTO
 	UpdateFruits PROTO
 	RenderFrame PROTO
 	PlayAgain PROTO
 .code
-
-CheckCollision PROC USES ecx edi, xPos:BYTE, yPos:BYTE
-	mov ecx, MAX_FRUITS
-	mov edi, OFFSET fruits
-	
-CheckLoop:
-	cmp BYTE PTR [edi].fruit.active, 1
-	jne SkipCheck
-	
-	mov al, [edi].fruit.x
-	cmp al, xPos
-	jne SkipCheck
-	
-	mov al, [edi].fruit.y
-	cmp al, yPos
-	jne SkipCheck
-	
-	mov eax, 1
-	ret
-	
-SkipCheck:
-	add edi, SIZEOF fruit
-	dec ecx
-	jnz CheckLoop
-	
-	mov eax, 0
-	ret
-CheckCollision ENDP
  
 ResetGame PROC
 	mov score, 0
 	mov lives, 3
 	mov gameOver, 0
+	mov spawnTimer, SPAWN_INTERVAL ; Reset timer
+	mov activeFruitCount, 0
+	
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
  
 ClearLoop:
 	mov BYTE PTR [edi].fruit.active, 0
-	mov BYTE PTR [edi].fruit.counter, 0
 	add edi, SIZEOF fruit
 	dec ecx
 	jnz ClearLoop
 	
-	call SpawnFruit
-	call SpawnFruit
+	; Don't spawn fruit immediately - wait for timer
 	ret
 ResetGame ENDP
 
-SpawnFruit PROC USES eax ebx ecx edi
-	LOCAL attempts:BYTE
-	mov attempts, 20
-	
-TryAgain:
-	dec attempts
-	cmp attempts, 0
-	je SpawnFailed
+SpawnFruit PROC USES eax ecx edi
+	; Check if we can spawn more fruits
+	cmp activeFruitCount, MAX_ON_SCREEN
+	jge CannotSpawn ; Already at maximum
 	
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
+	
 FindSlot:
 	cmp BYTE PTR [edi].fruit.active, 0
 	je FoundSlot
 	add edi, SIZEOF fruit
 	dec ecx
 	jnz FindSlot
-	ret
+	ret ; No slots available
 	
 FoundSlot:
-	; Generate random X position as multiple of 5
-	mov eax, SCREEN_WIDTH - 1
-	xor edx, edx
-	mov ebx, 5
-	div ebx
-	mul ebx
-	
-	mov ebx, eax
-	mov eax, ebx
-	mov ecx, 5
-	xor edx, edx
-	div ecx
-	
+	; Generate random X position
+	mov eax, SCREEN_WIDTH - 10 ; Leave some margin
 	call RandomRange
-	inc eax
+	add eax, 5 ; Start from position 5
+	
+	; Make it a multiple of 5 for consistency
 	mov bl, 5
+	div bl
 	mul bl
-	mov dl, al ; X position (multiple of 5)
+	mov [edi].fruit.x, al
 	
-	; Y position starts at 0 (top of screen)
-	mov dh, 0
+	; Start at top of screen
+	mov [edi].fruit.y, 0
 	
-	invoke CheckCollision, dl, dh
-	cmp eax, 1
-	je TryAgain
-	
-	; Good position found
+	; Activate fruit
 	mov BYTE PTR [edi].fruit.active, 1
-	mov [edi].fruit.x, dl
-	mov [edi].fruit.y, dh
+	inc activeFruitCount
 	
+	; Random fruit type (0-4)
 	mov eax, 5
 	call RandomRange
 	mov [edi].fruit.var_type, al
 	
-	; Set speed (movement delay)
-	; 1 = fastest, 3 = slowest
+	; Set movement speed (1-3)
 	mov eax, 3
 	call RandomRange
-	inc eax ; Now 1-3
+	inc eax ; 1-3
 	mov [edi].fruit.speed, al
 	
-	; Initialize counter to 0
 	mov [edi].fruit.counter, 0
-	
 	ret
 	
-SpawnFailed:
-	mov ecx, MAX_FRUITS
-	mov edi, OFFSET fruits
-FindAnySlot:
-	cmp BYTE PTR [edi].fruit.active, 0
-	je ForceSpawn
-	add edi, SIZEOF fruit
-	dec ecx
-	jnz FindAnySlot
-	ret
-	
-ForceSpawn:
-	mov BYTE PTR [edi].fruit.active, 1
-	mov [edi].fruit.x, 5
-	mov [edi].fruit.y, 0
-	mov eax, 5
-	call RandomRange
-	mov [edi].fruit.var_type, al
-	mov [edi].fruit.speed, 1
-	mov [edi].fruit.counter, 0
+CannotSpawn:
 	ret
 SpawnFruit ENDP
 
 HandleInput PROC
 	call ReadKey
 	jz NoInput
-	cmp ax, 1E00h
+	cmp ax, 1E00h ; 'A' key
 	je MoveLeft
-	cmp ax, 2000h
+	cmp ax, 2000h ; 'D' key
 	je MoveRight
-	cmp ax, 4B00h
+	cmp ax, 4B00h ; left arrow
 	je MoveLeft
-	cmp ax, 4D00h
+	cmp ax, 4D00h ; right arrow
 	je MoveRight
 	cmp al, ' '
 	je SliceKey
@@ -217,64 +155,91 @@ ClampDoneRight:
 SliceKey:
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
-	mov bl, 0
 	
-SliceLoop:
+FruitLoop:
 	cmp BYTE PTR [edi].fruit.active, 1
 	jne NextFruitSlice
 	
-	; Check if fruit is at slicing height (one above player or at player height)
+	; Check if fruit is near player's Y position
 	mov al, [edi].fruit.y
-	cmp al, SCREEN_HEIGHT - 2
+	cmp al, SCREEN_HEIGHT - 2 ; One above player
 	je CheckSlice
-	cmp al, SCREEN_HEIGHT - 1
-	jne NextFruitSlice
+	cmp al, SCREEN_HEIGHT - 1 ; At player position
+	je CheckSlice
+	cmp al, SCREEN_HEIGHT - 3 ; Two above player
+	je CheckSlice
+	jmp NextFruitSlice
 	
 CheckSlice:
+	; Check if fruit is within ±2 X positions of player
 	mov al, [edi].fruit.x
 	sub al, playerX
 	cmp al, 0
 	je HitFruit
+	cmp al, 1
+	je HitFruit
+	cmp al, -1
+	je HitFruit
+	cmp al, 2
+	je HitFruit
+	cmp al, -2
+	je HitFruit
+	; Also check for multiples of 5 positions
 	cmp al, 5
 	je HitFruit
 	cmp al, -5
 	je HitFruit
-	cmp al, 10
-	je HitFruit
-	cmp al, -10
-	je HitFruit
 	jmp NextFruitSlice
 	
 HitFruit:
+	; Show slice effect
 	mov dl, [edi].fruit.x
 	mov dh, [edi].fruit.y
 	call Gotoxy
 	mov al, sliceChar
 	call WriteChar
 	
+	; Deactivate fruit
 	mov BYTE PTR [edi].fruit.active, 0
+	dec activeFruitCount
 	inc score
-	mov bl, 1
 	
 	push eax
-	mov eax, 50
+	mov eax, 100 ; Brief delay to show slice
 	call Delay
 	pop eax
+	
+	; Don't reset spawn timer - keep spawning every 2 seconds
+	; Continue checking for other fruits to slice
+	jmp NextFruitSlice ; Allow slicing multiple fruits with one key press
 	
 NextFruitSlice:
 	add edi, SIZEOF fruit
 	dec ecx
-	jnz SliceLoop
-	
-	cmp bl, 1
-	jne NoInput
-	call SpawnFruit
+	jnz FruitLoop
 	
 NoInput:
 	ret
 HandleInput ENDP
 
 UpdateFruits PROC
+	; Update spawn timer
+	mov eax, spawnTimer
+	cmp eax, 0
+	jle TimerReady
+	sub eax, FRUIT_SPEED ; Subtract frame time
+	mov spawnTimer, eax
+	jmp TimerUpdated
+	
+TimerReady:
+	; Timer reached 0 - try to spawn a fruit
+	call SpawnFruit
+	; Reset timer for next spawn
+	mov spawnTimer, SPAWN_INTERVAL
+	
+TimerUpdated:
+
+	; Update fruits movement
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
 
@@ -282,12 +247,12 @@ UpdateLoop:
 	cmp BYTE PTR [edi].fruit.active, 1
 	jne NextUpdateFruit
 	
-	; Increment counter
+	; Update counter
 	mov al, [edi].fruit.counter
 	inc al
 	mov [edi].fruit.counter, al
 	
-	; Check if it's time to move this fruit based on its speed
+	; Check if it's time to move based on speed
 	mov bl, [edi].fruit.speed
 	cmp bl, 1
 	je MoveFast
@@ -296,42 +261,39 @@ UpdateLoop:
 	; Speed = 3 (slowest)
 	
 MoveSlow:
-	; Move every 3 frames
-	mov bl, al
-	and bl, 3 ; Check if divisible by 3 (bits 0-1 = 0)
-	cmp bl, 0
-	jne NextUpdateFruit
+	; Move every 4 frames (slowest)
+	test al, 3 ; Check if divisible by 4
+	jnz NextUpdateFruit
 	jmp DoMove
 	
 MoveMedium:
 	; Move every 2 frames
-	test al, 1 ; Check if odd/even
+	test al, 1
 	jnz NextUpdateFruit
 	jmp DoMove
 	
 MoveFast:
-	; Move every frame (always move)
+	; Move every frame
+	; (no check needed)
 	
 DoMove:
-	; Move the fruit down by 1
+	; Move fruit down by 1
 	mov al, [edi].fruit.y
 	inc al ; Move down by 1 position
 	mov [edi].fruit.y, al
 	
-	; Check if fruit reached or passed bottom
+	; Check if fruit reached bottom
 	cmp al, SCREEN_HEIGHT - 1
 	jl NextUpdateFruit
 	
-	; Fruit reached bottom
+	; Fruit reached bottom - player missed it
 	mov BYTE PTR [edi].fruit.active, 0
+	dec activeFruitCount
 	dec lives
-	cmp lives, 0
-	jg RespawnUpdate
-	mov gameOver, 1
-	jmp NextUpdateFruit
 	
-RespawnUpdate:
-	call SpawnFruit
+	cmp lives, 0
+	jg NextUpdateFruit
+	mov gameOver, 1
 	
 NextUpdateFruit:
 	add edi, SIZEOF fruit
@@ -343,6 +305,7 @@ UpdateFruits ENDP
 RenderFrame PROC
 	call Clrscr
 	
+	; Display score and lives
 	mov dh, 0
 	mov dl, 0
 	call Gotoxy
@@ -352,13 +315,40 @@ RenderFrame PROC
 	mov eax, score
 	call WriteDec
 	
-	mov dl, 20 
+	mov dl, 20
 	call Gotoxy
 	mov edx, OFFSET livesMsg
 	call WriteString
 	mov eax, lives
 	call WriteDec
+	
+	; Display active fruit count and timer
+	mov dl, 40
+	call Gotoxy
+	mov al, '['
+	call WriteChar
+	movzx eax, activeFruitCount
+	call WriteDec
+	mov al, '/'
+	call WriteChar
+	mov eax, MAX_ON_SCREEN
+	call WriteDec
+	mov al, ']'
+	call WriteChar
+	
+	; Display next spawn timer
+	mov dl, 50
+	call Gotoxy
+	mov eax, spawnTimer
+	mov ebx, 1000
+	xor edx, edx
+	div ebx
+	inc eax ; Round up
+	call WriteDec
+	mov al, 's'
+	call WriteChar
 
+	; Draw fruits
 	mov ecx, MAX_FRUITS
 	mov edi, OFFSET fruits
 	
@@ -370,15 +360,6 @@ DrawFruitLoop:
 	mov dh, [edi].fruit.y
 	call Gotoxy
 	
-	push ecx
-	push edi
-	invoke CheckCollision, dl, dh
-	pop edi
-	pop ecx
-	
-	cmp eax, 1
-	ja SkipDraw
-	
 	movzx eax, [edi].fruit.var_type
 	mov al, fruitChars[eax]
 	call WriteChar
@@ -388,21 +369,7 @@ SkipDraw:
 	dec ecx
 	jnz DrawFruitLoop
 	
-	; Adjust playerX to nearest multiple of 5
-	mov al, playerX
-	xor ah, ah
-	mov bl, 5
-	div bl
-	cmp ah, 0
-	je PlayerPosOK
-	mov al, playerX
-	add al, 2
-	mov bl, 5
-	div bl
-	mul bl
-	mov playerX, al
-	
-PlayerPosOK:
+	; Draw player
 	mov dl, playerX
 	mov dh, SCREEN_HEIGHT - 1
 	call Gotoxy
@@ -413,7 +380,7 @@ PlayerPosOK:
 RenderFrame ENDP
 
 PlayAgain PROC
-	call Clrscr
+	call Clrscr 
 	mov edx, OFFSET gameOverMsg
 	call WriteString
 	mov eax, score
@@ -461,13 +428,6 @@ GameLoop:
 	mov eax, FRUIT_SPEED
 	call Delay
 	
-	mov eax, FRUIT_SPAWN_CHANCE
-	call RandomRange
-	cmp eax, 0
-	jne NoSpawn
-	call SpawnFruit
-	
-NoSpawn:
 	jmp GameLoop
 
 EndGame:
@@ -482,5 +442,4 @@ DoRestart:
 
 main ENDP
 END main
-
 
