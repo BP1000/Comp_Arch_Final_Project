@@ -406,7 +406,7 @@ SkipDraw:
 RenderFrame ENDP
 
 PlayAgain PROC
-	call Clrscr 
+	call Clrscr
 	mov edx, OFFSET gameOverMsg
 	call WriteString
 	mov eax, score
@@ -415,14 +415,18 @@ PlayAgain PROC
 	mov edx, OFFSET playAgainMsg
 	call WriteString
 	call Crlf
+	mov ecx, 10
+ClearBuffer:
 	call ReadKey
+	loop ClearBuffer
+	call ReadChar
 	cmp al, 'Y'
-	je ChooseRestart
+	je YesRestart
 	cmp al, 'y'
-	je ChooseRestart
+	je YesRestart
 	mov al, 0
 	ret
-ChooseRestart:
+YesRestart:
 	mov al, 1
 	ret
 PlayAgain ENDP
@@ -459,7 +463,7 @@ GameLoop:
 EndGame:
 	call PlayAgain
 	cmp al, 1
-	je DoRestart
+	je StartGame
 	exit
 	
 DoRestart:
